@@ -4,13 +4,16 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node esbuild.js"
   },
   "author": "FaihdP",
   "license": "ISC",
   "description": "",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.782.0",
-    "@aws-sdk/lib-dynamodb": "^3.782.0"
+    "@aws-sdk/lib-dynamodb": "^3.782.0",
+    "@aws-sdk/util-dynamodb": "^3.782.0",
+    "esbuild": "^0.25.2"
   }
 }
