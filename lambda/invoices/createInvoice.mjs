@@ -16,24 +16,26 @@ export const handler = async (event) => {
   }
 
   const validators = {
-    invoiceID: (v) => Boolean(v),
+    InvoiceID: (v) => Boolean(v),
     date: (v) => Boolean(v),
     value: (v) => Boolean(v),
     type: (v) => INVOICE_TYPES.includes(v),
     status: (v) => INVOICE_STATUS.includes(v),
   }
 
-  const { invoiceID, date, value, type, status, person } = event
-  const invoice = { invoiceID, date, value, type, status, ...(person && { person }) }
+  const { InvoiceID, date, value, type, status, person } = event
+  const invoice = { InvoiceID, date, value, type, status, ...(person && { person }) }
 
   const invalidFields = Object.entries(validators).filter(([key, validate]) => !validate(invoice[key]))
 
-  if (invalidFields.length > 0) 
+  if (invalidFields.length > 0) {
+    console.error("Invalid or missing fields: ", JSON.stringify(invalidFields))
     return {
       statusCode: 400,
       headers,
       body: { message: "Invalid or missing fields" },
     }
+  }
   
   try {
     await dynamo.send(new PutCommand({ TableName: TABLE_NAME, Item: invoice }))
