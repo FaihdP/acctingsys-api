@@ -7,7 +7,7 @@ const dynamo = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = "invoices"
 const INVOICE_TYPES = ["BUY", "SALE"]
 const INVOICE_STATUS = ["Pagada", "En deuda"]
-
+//TEST
 export const handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Headers" : "Content-Type,X-Api-Key",
@@ -33,7 +33,7 @@ export const handler = async (event) => {
     return {
       statusCode: 400,
       headers,
-      body: { message: "Invalid or missing fields" },
+      body: JSON.stringify({ message: "Invalid or missing fields" }),
     }
   }
   
@@ -42,14 +42,14 @@ export const handler = async (event) => {
     return {
       statusCode: 200,
       headers,
-      body: { message: "Document saved correctly" },
+      body: JSON.stringify({ message: "Document saved correctly" }),
     }
   } catch (error) {
     console.error(error)
     return {
       statusCode: 500,
       headers,
-      body: { message: "Document can't be saved", error },
+      body: JSON.stringify({ message: "Document can't be saved", error }),
     }
   }
 };
