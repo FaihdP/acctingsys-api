@@ -20,18 +20,18 @@ const VALIDATORS = {
 }
 
 function validateInvoice(invoice) {
-  const invalidFields = Object.entries(VALIDATORS).filter(([key, validate]) => !validate(invoice[key])).map(([key]) => key)
-  if (invalidFields.length > 0)
+  const invalidField = Object.entries(VALIDATORS).find(([key, validate]) => !validate(invoice[key]))
+  if (invalidField)
     throw {
       statusCode: 400,
-      body: JSON.stringify({ message: "Invalid or missing fields " + invalidFields.join(", ") })
+      body: JSON.stringify({ message: "Invalid or missing fields: " + invalidField[0] })
     }
 }
 
 export const handler = async (event) => {
   let response = {}
-  const { InvoiceID, date, value, type, status, person } = event
-  const Item = { InvoiceID, date, value, type, status }
+  const { InvoiceID, date, value, type, status, person } = JSON.parse(event.body)
+  const Item: any = { InvoiceID, date, value, type, status }
   if (person) Item.person = person
   
   try {
@@ -42,9 +42,10 @@ export const handler = async (event) => {
       body: JSON.stringify({ message: "Document saved correctly" })
     }
   } catch (errorResponse) {
+    console.log(errorResponse)
     response = {
-      statusCode: err.statusCode || 500,
-      body: err.body || JSON.stringify({ message: "Internal server error" })
+      statusCode: errorResponse.statusCode || 500,
+      body: errorResponse.body || JSON.stringify({ message: "Internal server error" })
     }
   }
 
@@ -53,3 +54,15 @@ export const handler = async (event) => {
     ...response
   }
 }
+
+const response = await handler({
+  body: JSON.stringify({
+    "InvoiceID": 3,
+    "date": "2025-04-05T12:55:46Z",
+    "value": 10400,
+    "type": "BUY",
+    "status": "Pagada"
+  })
+})
+
+console.log(response)
