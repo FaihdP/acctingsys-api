@@ -11,7 +11,7 @@ if (!entryFile && !funcName) {
   process.exit(1)
 }
 
-const paths = entryFile.split("/")
+const paths = entryFile.split(entryFile.includes("/") ? "/" : "\\")
 paths[0] = "dist"
 paths[paths.length - 1] = "index.mjs"
 const outFile = paths.join("/")
@@ -42,7 +42,8 @@ esbuild.build({
     console.log(`📦 Compressed (${zipPath}) (${archive.pointer()} bytes)`)
 
     try {
-      execSync(`aws lambda update-function-code --function-name ${funcName} --zip-file fileb://${zipPath}`, {
+      execSync(
+       `aws lambda update-function-code --function-name ${funcName} --zip-file fileb://${zipPath}`, {
         stdio: "inherit"
       })
       console.log("🚀 Successful Lambda deployment")
