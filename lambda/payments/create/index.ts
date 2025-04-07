@@ -3,20 +3,19 @@ import { marshall } from "@aws-sdk/util-dynamodb";
 
 const client = new DynamoDBClient({});
 
-const TABLE_NAME = "invoices"
-const INVOICE_TYPES = new Set(["BUY", "SALE"])
-const INVOICE_STATUS = new Set(["Pagada", "En deuda"])
+const TABLE_NAME = "payments"
+const INVOICE_TYPES = new Set(["DIGITAL", "CASH"])
 const HEADERS = {
   "Access-Control-Allow-Headers" : "Content-Type,X-Api-Key",
   "Access-Control-Allow-Origin": "https://localhost:3000",
   "Access-Control-Allow-Methods": "OPTIONS,POST"
 }
 const VALIDATORS = {
-  InvoiceID: (v) => Boolean(v),
+  PaymentID: (v) => Boolean(v),
   date: (v) => Boolean(v),
   value: (v) => Boolean(v),
   type: (v) => INVOICE_TYPES.has(v),
-  status: (v) => INVOICE_STATUS.has(v)
+  bank: (v) => Boolean(v)
 }
 
 function validateInvoice(invoice) {
@@ -30,9 +29,8 @@ function validateInvoice(invoice) {
 
 export const handler = async (event) => {
   let response = {}
-  const { InvoiceID, date, value, type, status, person } = JSON.parse(event.body)
-  const Item: any = { InvoiceID, date, value, type, status }
-  if (person) Item.person = person
+  const { PaymentID, date, value, type, bank } = JSON.parse(event.body)
+  const Item: any = { PaymentID, date, value, type, bank }
   
   try {
     validateInvoice(Item)
