@@ -15,11 +15,10 @@ const VALIDATORS = {
   date: (v) => Boolean(v),
   value: (v) => Boolean(v),
   type: (v) => INVOICE_TYPES.has(v),
-  bank: (v) => Boolean(v)
 }
 
-function validateInvoice(invoice) {
-  const invalidField = Object.entries(VALIDATORS).find(([key, validate]) => !validate(invoice[key]))
+function validatePayment(payment) {
+  const invalidField = Object.entries(VALIDATORS).find(([key, validate]) => !validate(payment[key]))
   if (invalidField)
     throw {
       statusCode: 400,
@@ -33,8 +32,8 @@ export const handler = async (event) => {
   const Item: any = { PaymentID, date, value, type, bank }
   
   try {
-    validateInvoice(Item)
-    await client.send(new PutItemCommand({ TableName: TABLE_NAME, Item: marshall(Item) }))
+    validatePayment(Item)
+    await client.send(new PutItemCommand({ TableName: TABLE_NAME, Item: marshall(Item, { removeUndefinedValues: true }) }))
     response = {
       statusCode: 200,
       body: JSON.stringify({ message: "Document saved correctly" })
