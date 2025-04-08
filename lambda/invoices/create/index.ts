@@ -1,16 +1,12 @@
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
+import HEADERS from "../../headers";
 
 const client = new DynamoDBClient({});
 
 const TABLE_NAME = "invoices"
 const INVOICE_TYPES = new Set(["BUY", "SALE"])
 const INVOICE_STATUS = new Set(["Pagada", "En deuda"])
-const HEADERS = {
-  "Access-Control-Allow-Headers" : "Content-Type,X-Api-Key",
-  "Access-Control-Allow-Origin": "https://localhost:3000",
-  "Access-Control-Allow-Methods": "OPTIONS,POST"
-}
 const VALIDATORS = {
   InvoiceID: (v) => Boolean(v),
   date: (v) => Boolean(v),
@@ -36,7 +32,7 @@ export const handler = async (event) => {
   
   try {
     validateInvoice(Item)
-    await client.send(new PutItemCommand({ TableName: TABLE_NAME, Item: marshall(Item) }))
+    await client.send(new PutItemCommand({ TableName: TABLE_NAME, Item: marshall(Item, { removeUndefinedValues: true }) }))
     response = {
       statusCode: 200,
       body: JSON.stringify({ message: "Document saved correctly" })

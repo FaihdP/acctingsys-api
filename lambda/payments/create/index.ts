@@ -1,15 +1,11 @@
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
+import HEADERS from "../../headers";
 
 const client = new DynamoDBClient({});
 
 const TABLE_NAME = "payments"
 const INVOICE_TYPES = new Set(["DIGITAL", "CASH"])
-const HEADERS = {
-  "Access-Control-Allow-Headers" : "Content-Type,X-Api-Key",
-  "Access-Control-Allow-Origin": "https://localhost:3000",
-  "Access-Control-Allow-Methods": "OPTIONS,POST"
-}
 const VALIDATORS = {
   PaymentID: (v) => Boolean(v),
   date: (v) => Boolean(v),

@@ -6,7 +6,7 @@ import { execSync } from "child_process"
 const entryFile = process.argv[2]
 const funcName = process.argv[3]
 
-if (!entryFile && !funcName) {
+if (!entryFile || !funcName) {
   console.error("❌ You must indicate the function path and lambda function name (ej: node build-lambda.js lambda/invoices/create/index.ts createInvoice)")
   process.exit(1)
 }
