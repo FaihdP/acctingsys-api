@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "downlevelIteration": true,
+    "target": "ESNext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@constants/*": ["./lambda/constants/*"],
+    }
+  }
+}
