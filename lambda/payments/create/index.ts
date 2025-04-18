@@ -36,7 +36,7 @@ export const handler = async (event) => {
   const payments = JSON.parse(event.body)
   for (const payment of payments) {
     const { PaymentID, date, value, type, bank } = payment
-    const Item: any = { PaymentID, date, value, type, bank, tatus: ACTIVE_STATUS }
+    const Item: any = { PaymentID, date, value, type, bank, status: ACTIVE_STATUS }
     
     try {
       validatePayment(Item)

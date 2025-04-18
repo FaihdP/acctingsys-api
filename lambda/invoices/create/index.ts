@@ -38,7 +38,9 @@ export const handler = async (event) => {
   for (const invoice of invoices) {
     const { InvoiceID, date, value, type, status, person } = invoice
     const Item: any = { InvoiceID, date, value, type, status }
-    if (person) Item.person = person
+    if (person) {
+      Item.person = person.name + " " + person.lastname
+    }
     
     try {
       validateInvoice(Item)
