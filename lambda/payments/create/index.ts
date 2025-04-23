@@ -25,7 +25,7 @@ function validatePayment(payment) {
   const invalidField = Object.entries(VALIDATORS).find(([key, validate]) => !validate(payment[key]))
   if (invalidField)
     throw {
-      PayemntID: payment.PaymentID,
+      PaymentID: payment.PaymentID,
       statusCode: 400,
       body: RESPONSE_MESSAGES.INVALID_OR_MISSING_FIELD + invalidField[0]
     }
