@@ -63,10 +63,10 @@ export const handler = async (event) => {
         message: errorResponse.body || RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR + errorResponse.message
       })
     }
-    
-    return {
-      headers: HEADERS,
-      body: JSON.stringify(documentsResponse)
-    }
+  }
+
+  return {
+    headers: HEADERS,
+    body: JSON.stringify(documentsResponse)
   }
 }
