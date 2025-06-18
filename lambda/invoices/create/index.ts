@@ -1,8 +1,9 @@
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
-import HEADERS from "../../constants/headers";
+import HEADERS from "@constants/headers";
 import RESPONSE_MESSAGES from "@constants/responseMessages";
 import { INVOICES_TABLE_NAME } from "@constants/tablesNames";
+import getDate from "../../utils/utils";
 
 interface InvoiceResponse { 
   InvoiceID: string, 
@@ -10,37 +11,67 @@ interface InvoiceResponse {
   message: string 
 }
 
+interface Invoice {
+  invoiceId: string,
+  date: Date 
+  value: number
+  type: "SALE" | "BUY"
+  status: "Pagada" | "En deuda"
+  person?: {
+    name: string
+    lastname: string
+  }
+}
+
+interface Data {
+  branchId: string
+  documents: Invoice[]
+}
+
 const client = new DynamoDBClient({});
 
 const INVOICE_TYPES = new Set(["BUY", "SALE"])
 const INVOICE_STATUS = new Set(["Pagada", "En deuda"])
 const VALIDATORS = {
-  InvoiceID: (v) => Boolean(v),
+  branchId: (v) => Boolean(v),
+  entryKey: (v) => {
+    if (typeof v !== "string") return false
+    return v.includes("#INVOICEID#")
+  },
   date: (v) => Boolean(v),
   value: (v) => Boolean(v),
   type: (v) => INVOICE_TYPES.has(v),
   status: (v) => INVOICE_STATUS.has(v)
 }
 
-function validateInvoice(invoice) {
+function validateInvoice(invoice: Invoice) {
   const invalidField = Object.entries(VALIDATORS).find(([key, validate]) => !validate(invoice[key]))
   if (invalidField)
-    throw {
-      InvoiceID: invoice.InvoiceID,
+    console.log(invoice)
+    throw { 
+      InvoiceID: invoice.invoiceId,
       statusCode: 400,
       body: RESPONSE_MESSAGES.INVALID_OR_MISSING_FIELD + invalidField[0]
     }
 }
 
 export const handler = async (event) => {
+  console.log("Event: ", event)
   const documentsResponse: InvoiceResponse[] = []
-  const invoices = JSON.parse(event.body)
+  const data: Data = JSON.parse(event.body)
+  const invoices: Invoice[] = data.documents
   for (const invoice of invoices) {
-    const { InvoiceID, date, value, type, status, person } = invoice
-    const Item: any = { InvoiceID, date, value, type, status }
-    if (person) {
-      Item.person = person.name + " " + person.lastname
+    const { invoiceId, date, value, type, status, person } = invoice
+    const Item: any = { 
+      branchId: data.branchId, 
+      entryKey: `${getDate(date)}#INVOICEID#${invoiceId}`,
+      date, 
+      value, 
+      type, 
+      status 
     }
+
+    if (person) Item.person = person.name + " " + person.lastname
     
     try {
       validateInvoice(Item)
@@ -51,7 +82,7 @@ export const handler = async (event) => {
       }))
       
       documentsResponse.push({
-        InvoiceID,
+        InvoiceID: invoiceId,
         statusCode: 200,
         message: RESPONSE_MESSAGES.DOCUMENT_SAVED
       })
@@ -67,6 +98,7 @@ export const handler = async (event) => {
 
   return {
     headers: HEADERS,
+    statusCode: 200,
     body: JSON.stringify(documentsResponse)
   }
 }
