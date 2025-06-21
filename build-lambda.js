@@ -20,7 +20,6 @@ const zipPath = `zip/${funcName}.zip`;
 esbuild.build({
   entryPoints: [entryFile],
   bundle: true,
-  minify: true,
   platform: "node",
   target: "node22",
   format: "esm",
@@ -41,15 +40,15 @@ esbuild.build({
   output.on("close", () => {
     console.log(`📦 Compressed (${zipPath}) (${archive.pointer()} bytes)`)
 
-    // try {
-    //   execSync(
-    //    `aws lambda update-function-code --function-name ${funcName} --zip-file fileb://${zipPath}`, {
-    //     stdio: "inherit"
-    //   })
-    //   console.log("🚀 Successful Lambda deployment")
-    // } catch (err) {
-    //   console.error("❌ Error uploading Lambda:", err.message)
-    // }
+    try {
+      execSync(
+       `aws lambda update-function-code --function-name ${funcName} --zip-file fileb://${zipPath}`, {
+        stdio: "inherit"
+      })
+      console.log("🚀 Successful Lambda deployment")
+    } catch (err) {
+      console.error("❌ Error uploading Lambda:", err.message)
+    }
   })
 
 }).catch(() => process.exit(1));

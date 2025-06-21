@@ -4,6 +4,8 @@ import HEADERS from "@constants/headers";
 import RESPONSE_MESSAGES from "@constants/responseMessages";
 import { ACTIVE_STATUS } from "@constants/status";
 import { EXPENSES_TABLE_NAME } from "@constants/tablesNames";
+import getDate from "../../utils/utils";
+import Data from "../../utils/interfaces/Data";
 
 interface ExpenseResponse { 
   ExpenseID: string, 
@@ -14,7 +16,11 @@ interface ExpenseResponse {
 const client = new DynamoDBClient({});
 
 const VALIDATORS = {
-  ExpenseID: (v) => Boolean(v),
+  branchId: (v) => Boolean(v),
+  entryKey: (v) => {
+    if (typeof v !== "string") return false
+    return v.includes("#EXPENSEID#")
+  },
   date: (v) => Boolean(v),
   value: (v) => Boolean(v),
   title: (v) => Boolean(v)
@@ -24,18 +30,27 @@ function validateExpense(expense) {
   const invalidField = Object.entries(VALIDATORS).find(([key, validate]) => !validate(expense[key]))
   if (invalidField)
     throw {
-      ExpenseID: expense.ExpenseID,
+      ExpenseID: expense.expenseId,
       statusCode: 400,
-      body: RESPONSE_MESSAGES.INVALID_OR_MISSING_FIELD + invalidField[0]
+      body: RESPONSE_MESSAGES.INVALID_OR_MISSING_FIELD + ". " + invalidField[0]
     }
 }
 
 export const handler = async (event) => {
   const documentsResponse: ExpenseResponse[] = []
-  const expenses = JSON.parse(event.body)
+  const data: Data = JSON.parse(event.body)
+  const expenses = data.documents
   for (const expense of expenses) {
-    const { ExpenseID, date, value, title, description } = expense
-    const Item: any = { ExpenseID, date, value, title, description, status: ACTIVE_STATUS }
+    const { expenseId, date, value, title, description } = expense
+    const Item: any = { 
+      branchId: data.branchId, 
+      entryKey: `${getDate(date)}#EXPENSEID#${expenseId}`,
+      date, 
+      value, 
+      title, 
+      description, 
+      status: ACTIVE_STATUS 
+    }
     try {
       validateExpense(Item)
 
@@ -45,7 +60,7 @@ export const handler = async (event) => {
       }))
 
       documentsResponse.push({
-        ExpenseID,
+        ExpenseID: expenseId,
         statusCode: 200,
         message: RESPONSE_MESSAGES.DOCUMENT_SAVED
       })
@@ -54,7 +69,7 @@ export const handler = async (event) => {
       documentsResponse.push({
         ExpenseID: errorResponse.ExpenseID,
         statusCode: errorResponse.statusCode || 500,
-        message: errorResponse.body || RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR + errorResponse.message
+        message: errorResponse.body || RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR + ". " + errorResponse.message
       })
     }
   }

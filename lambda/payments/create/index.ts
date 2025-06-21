@@ -4,6 +4,8 @@ import HEADERS from "../../constants/headers";
 import RESPONSE_MESSAGES from "@constants/responseMessages";
 import { ACTIVE_STATUS } from "@constants/status";
 import { PAYMENTS_TABLE_NAME } from "@constants/tablesNames";
+import getDate from "../../utils/utils";
+import Data from "../../utils/interfaces/Data";
 
 const client = new DynamoDBClient({});
 
@@ -15,7 +17,11 @@ interface PaymentResponse {
 
 const INVOICE_TYPES = new Set(["DIGITAL", "CASH"])
 const VALIDATORS = {
-  PaymentID: (v) => Boolean(v),
+  branchId: (v) => Boolean(v),
+  entryKey: (v) => {
+    if (typeof v !== "string") return false
+    return v.includes("#PAYMENTID#")
+  },
   date: (v) => Boolean(v),
   value: (v) => Boolean(v),
   type: (v) => INVOICE_TYPES.has(v),
@@ -33,10 +39,19 @@ function validatePayment(payment) {
 
 export const handler = async (event) => {
   const documentsResponse: PaymentResponse[] = []
-  const payments = JSON.parse(event.body)
+  const data: Data = JSON.parse(event.body)
+  const payments = data.documents
   for (const payment of payments) {
-    const { PaymentID, date, value, type, bank } = payment
-    const Item: any = { PaymentID, date, value, type, bank, status: ACTIVE_STATUS }
+    const { paymentId, date, value, type, bank } = payment
+    const Item: any = { 
+      branchId: data.branchId, 
+      entryKey: `${getDate(date)}#PAYMENTID#${paymentId}`,
+      date, 
+      value, 
+      type, 
+      bank, 
+      status: ACTIVE_STATUS 
+    }
     
     try {
       validatePayment(Item)
@@ -47,7 +62,7 @@ export const handler = async (event) => {
       }))
 
       documentsResponse.push({
-        PaymentID,
+        PaymentID: paymentId,
         statusCode: 200,
         message: RESPONSE_MESSAGES.DOCUMENT_SAVED
       })
@@ -56,7 +71,7 @@ export const handler = async (event) => {
       documentsResponse.push({
         PaymentID: errorResponse.PaymentID,
         statusCode: errorResponse.statusCode || 500,
-        message: errorResponse.body || RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR + errorResponse.message
+        message: errorResponse.body || RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR + ". " + errorResponse.message
       })
     }
   }

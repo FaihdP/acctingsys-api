@@ -4,6 +4,7 @@ import HEADERS from "@constants/headers";
 import RESPONSE_MESSAGES from "@constants/responseMessages";
 import { INVOICES_TABLE_NAME } from "@constants/tablesNames";
 import getDate from "../../utils/utils";
+import Data from "../../utils/interfaces/Data";
 
 interface InvoiceResponse { 
   InvoiceID: string, 
@@ -21,11 +22,6 @@ interface Invoice {
     name: string
     lastname: string
   }
-}
-
-interface Data {
-  branchId: string
-  documents: Invoice[]
 }
 
 const client = new DynamoDBClient({});
@@ -46,8 +42,7 @@ const VALIDATORS = {
 
 function validateInvoice(invoice: Invoice) {
   const invalidField = Object.entries(VALIDATORS).find(([key, validate]) => !validate(invoice[key]))
-  if (invalidField)
-    console.log(invoice)
+  if (invalidField && invalidField.length > 0)
     throw { 
       InvoiceID: invoice.invoiceId,
       statusCode: 400,
@@ -56,7 +51,6 @@ function validateInvoice(invoice: Invoice) {
 }
 
 export const handler = async (event) => {
-  console.log("Event: ", event)
   const documentsResponse: InvoiceResponse[] = []
   const data: Data = JSON.parse(event.body)
   const invoices: Invoice[] = data.documents
