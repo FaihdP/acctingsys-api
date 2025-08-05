@@ -43,11 +43,11 @@ esbuild.build({
     try {
       execSync(
        `aws lambda update-function-code --function-name ${funcName} --zip-file fileb://${zipPath}`, {
-        stdio: "inherit"
+        stdio: "ignore"
       })
-      console.log("🚀 Successful Lambda deployment")
+      console.log(`🚀 Successful lambda deployment (${funcName})`)
     } catch (err) {
-      console.error("❌ Error uploading Lambda:", err.message)
+      console.error(`❌ Error uploading lambda (${funcName}):`, err.message)
     }
   })
 

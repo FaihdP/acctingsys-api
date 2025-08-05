@@ -1,10 +1,12 @@
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
-import HEADERS from "@constants/headers";
-import RESPONSE_MESSAGES from "@constants/responseMessages";
-import { INVOICES_TABLE_NAME } from "@constants/tablesNames";
+import HEADERS from "../../constants/headers";
+import RESPONSE_MESSAGES from "../../constants/responseMessages";
+import { INVOICES_TABLE_NAME } from "../../constants/tablesNames";
 import getDate from "../../utils/utils";
 import Data from "../../utils/interfaces/Data";
+import validateRequest from "../../utils/validateRequest";
+import validateTag from "../../utils/validateTag";
 
 interface InvoiceResponse { 
   InvoiceID: string, 
@@ -29,11 +31,8 @@ const client = new DynamoDBClient({});
 const INVOICE_TYPES = new Set(["BUY", "SALE"])
 const INVOICE_STATUS = new Set(["Pagada", "En deuda"])
 const VALIDATORS = {
-  branchId: (v) => Boolean(v),
-  entryKey: (v) => {
-    if (typeof v !== "string") return false
-    return v.includes("#INVOICEID#")
-  },
+  branchId: (v) => validateTag(v, "BRANCH#"),
+  entryKey: (v) => validateTag(v, "#INVOICE#"),
   date: (v) => Boolean(v),
   value: (v) => Boolean(v),
   type: (v) => INVOICE_TYPES.has(v),
@@ -54,18 +53,22 @@ export const handler = async (event) => {
   const documentsResponse: InvoiceResponse[] = []
   const data: Data = JSON.parse(event.body)
   const invoices: Invoice[] = data.documents
+
+  const errorResponse = validateRequest(data)
+  if (errorResponse) return errorResponse
+
   for (const invoice of invoices) {
     const { invoiceId, date, value, type, status, person } = invoice
     const Item: any = { 
-      branchId: data.branchId, 
-      entryKey: `${getDate(date)}#INVOICEID#${invoiceId}`,
+      branchId: `BRANCH#${data.branchId}`, 
+      entryKey: `${getDate(date)}#INVOICE#${invoiceId}`,
       date, 
       value, 
       type, 
       status 
     }
 
-    if (person) Item.person = person.name + " " + person.lastname
+    if (person) Item.person = person
     
     try {
       validateInvoice(Item)

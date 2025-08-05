@@ -4,8 +4,12 @@
     "downlevelIteration": true,
     "target": "ESNext",
     "moduleResolution": "bundler",
+    "baseUrl": "./",
     "paths": {
-      "@constants/*": ["./lambda/constants/*"],
+      "@constants/*": ["src/lambda/constants/*"],
+      "@lambda/*": ["src/lambda/*"],
+      "@utils/*": ["src/lambda/utils/*"],
+      "@lib/*": ["src/lib/*"]
     }
   }
 }

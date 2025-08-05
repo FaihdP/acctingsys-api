@@ -1,11 +1,13 @@
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
-import HEADERS from "@constants/headers";
-import RESPONSE_MESSAGES from "@constants/responseMessages";
-import { ACTIVE_STATUS } from "@constants/status";
-import { EXPENSES_TABLE_NAME } from "@constants/tablesNames";
+import HEADERS from "../../constants/headers";
+import RESPONSE_MESSAGES from "../../constants/responseMessages";
+import { ACTIVE_STATUS } from "../../constants/status";
+import { EXPENSES_TABLE_NAME } from "../../constants/tablesNames";
 import getDate from "../../utils/utils";
 import Data from "../../utils/interfaces/Data";
+import validateRequest from "../../utils/validateRequest";
+import validateTag from "../../utils/validateTag";
 
 interface ExpenseResponse { 
   ExpenseID: string, 
@@ -16,11 +18,8 @@ interface ExpenseResponse {
 const client = new DynamoDBClient({});
 
 const VALIDATORS = {
-  branchId: (v) => Boolean(v),
-  entryKey: (v) => {
-    if (typeof v !== "string") return false
-    return v.includes("#EXPENSEID#")
-  },
+  branchId: (v) => validateTag(v, "BRANCH#"),
+  entryKey: (v) => validateTag(v, "#EXPENSE#"),
   date: (v) => Boolean(v),
   value: (v) => Boolean(v),
   title: (v) => Boolean(v)
@@ -40,11 +39,15 @@ export const handler = async (event) => {
   const documentsResponse: ExpenseResponse[] = []
   const data: Data = JSON.parse(event.body)
   const expenses = data.documents
+  
+  const errorResponse = validateRequest(data)
+  if (errorResponse) return errorResponse
+
   for (const expense of expenses) {
     const { expenseId, date, value, title, description } = expense
     const Item: any = { 
-      branchId: data.branchId, 
-      entryKey: `${getDate(date)}#EXPENSEID#${expenseId}`,
+      branchId: `BRANCH#${data.branchId}`, 
+      entryKey: `${getDate(date)}#EXPENSE#${expenseId}`,
       date, 
       value, 
       title, 

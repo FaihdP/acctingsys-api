@@ -1,11 +1,13 @@
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
 import HEADERS from "../../constants/headers";
-import RESPONSE_MESSAGES from "@constants/responseMessages";
-import { ACTIVE_STATUS } from "@constants/status";
-import { PAYMENTS_TABLE_NAME } from "@constants/tablesNames";
+import RESPONSE_MESSAGES from "../../constants/responseMessages";
+import { ACTIVE_STATUS } from "../../constants/status";
+import { PAYMENTS_TABLE_NAME } from "../../constants/tablesNames";
 import getDate from "../../utils/utils";
 import Data from "../../utils/interfaces/Data";
+import validateRequest from "../../utils/validateRequest";
+import validateTag from "../../utils/validateTag";
 
 const client = new DynamoDBClient({});
 
@@ -17,11 +19,8 @@ interface PaymentResponse {
 
 const INVOICE_TYPES = new Set(["DIGITAL", "CASH"])
 const VALIDATORS = {
-  branchId: (v) => Boolean(v),
-  entryKey: (v) => {
-    if (typeof v !== "string") return false
-    return v.includes("#PAYMENTID#")
-  },
+  branchId: (v) => validateTag(v, "BRANCH#"),
+  entryKey: (v) => validateTag(v, "#PAYMENT#"),
   date: (v) => Boolean(v),
   value: (v) => Boolean(v),
   type: (v) => INVOICE_TYPES.has(v),
@@ -41,11 +40,15 @@ export const handler = async (event) => {
   const documentsResponse: PaymentResponse[] = []
   const data: Data = JSON.parse(event.body)
   const payments = data.documents
+
+  const errorResponse = validateRequest(data)
+  if (errorResponse) return errorResponse
+
   for (const payment of payments) {
     const { paymentId, date, value, type, bank } = payment
     const Item: any = { 
-      branchId: data.branchId, 
-      entryKey: `${getDate(date)}#PAYMENTID#${paymentId}`,
+      branchId: `BRANCH#${data.branchId}`, 
+      entryKey: `${getDate(date)}#PAYMENT#${paymentId}`,
       date, 
       value, 
       type, 
